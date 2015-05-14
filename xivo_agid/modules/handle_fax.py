@@ -71,7 +71,7 @@ def _new_mail_backend(subject, content_file, email_from):
             p = subprocess.Popen([MUTT_PATH,
                                  "-e", "set copy=no",
                                  "-e", "set from=%s" % email_from,
-                                 "-e", "set realname='XiVO Fax'",
+                                 "-e", "set realname='Service Fax'",
                                  "-e", "set use_from=yes",
                                  "-s", subject % fmt_dict,
                                  "-a", pdffile, "--",
@@ -132,18 +132,25 @@ def _new_ftp_backend(host, username, password, directory=None):
     # in its original format, to the given FTP server when called.
     # Note that a connection is made every time the backend is called.
     def aux(faxfile, dstnum, args):
-        fobj = open(faxfile, "rb")
+        pdffile = _convert_tiff_to_pdf(faxfile)
+        fobj = open(pdffile, "rb")
         try:
             ftp_serv = ftplib.FTP(host, username, password)
             try:
                 if directory:
                     ftp_serv.cwd(directory)
-                stor_command = "STOR %s" % os.path.basename(faxfile)
+                stor_command = "STOR %s" % os.path.basename(pdffile)
                 ftp_serv.storbinary(stor_command, fobj)
             finally:
                 ftp_serv.close()
         finally:
             fobj.close()
+            
+        try:
+            os.remove(pdffile)
+        except OSError, e:
+            logger.info('Could not remove pdffile %s: %s', pdffile, e)
+
     return aux
 
 
